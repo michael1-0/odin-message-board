@@ -1,34 +1,34 @@
-import { data, i } from "../data.js";
 import { MessageNotFound } from "../errors/MessageNotFound.js";
+import {
+  getMessages,
+  insertMessage,
+  searchMessageById,
+} from "../db/queries.js";
 
-const messages = data;
-let index = i;
-
-export function getRoot(req, res) {
-  res.render("index", { title: "Home", messages: messages });
+async function getRoot(req, res) {
+  const result = await getMessages();
+  res.render("index", { title: "Home", messages: result });
 }
 
-export function getForm(req, res) {
+function getForm(req, res) {
   res.render("form", { title: "New message" });
 }
-export function postForm(req, res) {
+
+async function postForm(req, res) {
   const { user, textz } = req.body;
 
-  messages.push({ id: index++, text: textz, user: user, added: new Date() });
-
+  await insertMessage({ text: textz, userName: user });
   res.status(300).redirect("/");
 }
-
-export function getMessageById(req, res) {
-  const index = Number(req.params.id) - 1;
-  const message = messages[index];
-
-  if (!message) {
+async function getMessageById(req, res) {
+  const row = await searchMessageById(req.params.id);
+  if (!row) {
     throw new MessageNotFound("Message not found");
   }
-
   res.render("message", {
-    title: `Viewing message by ${message.user}`,
-    message,
+    title: `Viewing message by ${row.user}`,
+    message: { id: row[0].id, text: row[0].text, user: row[0].user_name },
   });
 }
+
+export { getRoot, getForm, postForm, getMessageById };
